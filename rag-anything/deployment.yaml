@@ -1,0 +1,87 @@
+# RAG-Anything Deployment
+# GitHub: https://github.com/HKUDS/RAG-Anything
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-anything
+  namespace: ai-stack
+  labels:
+    app: rag-anything
+    app.kubernetes.io/name: rag-anything
+    app.kubernetes.io/part-of: ai-stack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rag-anything
+  template:
+    metadata:
+      labels:
+        app: rag-anything
+        app.kubernetes.io/name: rag-anything
+    spec:
+      containers:
+        - name: rag-anything
+          # Custom image - need to build
+          # See: kubernetes/rag-anything/docker/Dockerfile
+          image: rag-anything:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          env:
+            # LLM Backend
+            - name: LLM_BASE_URL
+              value: "http://localai-local-ai.ai-stack.svc.cluster.local:8080/v1"
+            - name: LLM_MODEL
+              value: "mistral"
+            - name: LLM_API_KEY
+              value: "sk-localai-dummy-key"
+            # Embedding
+            - name: EMBEDDING_BASE_URL
+              value: "http://localai-local-ai.ai-stack.svc.cluster.local:8080/v1"
+            - name: EMBEDDING_MODEL
+              value: "all-minilm-l6-v2"
+            # Qdrant
+            - name: QDRANT_URL
+              value: "http://qdrant.ai-stack.svc.cluster.local:6333"
+            - name: QDRANT_COLLECTION
+              value: "rag_anything"
+            # Working directory
+            - name: WORKING_DIR
+              value: "/data/rag"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "1"
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: rag-anything-data
+        - name: config
+          configMap:
+            name: rag-anything-config

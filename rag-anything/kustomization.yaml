@@ -1,0 +1,23 @@
+# Kustomization for RAG-Anything
+# Usage: kubectl apply -k kubernetes/rag-anything/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ai-stack
+
+resources:
+  - configmap.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+
+commonLabels:
+  app.kubernetes.io/name: rag-anything
+  app.kubernetes.io/part-of: ai-stack
+  app.kubernetes.io/managed-by: kustomize
+
+# Image customization
+images:
+  - name: rag-anything
+    newName: burhandocker2021/rag-anything
+    newTag: latest

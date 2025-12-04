@@ -1,0 +1,16 @@
+# macOS
+.DS_Store
+__MACOSX/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+nohup.out
+
+# Secrets (varsa)
+*secret*.yaml
+*.env

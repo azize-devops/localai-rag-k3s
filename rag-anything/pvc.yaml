@@ -1,0 +1,17 @@
+# RAG-Anything PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rag-anything-data
+  namespace: ai-stack
+  labels:
+    app: rag-anything
+    app.kubernetes.io/name: rag-anything
+    app.kubernetes.io/part-of: ai-stack
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn-xfs-strg1
+  resources:
+    requests:
+      storage: 10Gi

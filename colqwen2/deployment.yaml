@@ -1,0 +1,105 @@
+# ColQwen2 Deployment - Visual Embedding Service
+# Faz 2 - Sprint 21
+# Model: https://huggingface.co/vidore/colqwen2-v1.0
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: colqwen2
+  namespace: ai-stack
+  labels:
+    app: colqwen2
+    app.kubernetes.io/name: colqwen2
+    app.kubernetes.io/part-of: ai-stack
+    phase: "2"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: colqwen2
+  template:
+    metadata:
+      labels:
+        app: colqwen2
+        app.kubernetes.io/name: colqwen2
+    spec:
+      # GPU node selector
+      nodeSelector:
+        gpu: "true"
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"
+      containers:
+        - name: colqwen2
+          # Custom image - see docker/Dockerfile
+          image: colqwen2:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8001
+              protocol: TCP
+          env:
+            # Model configuration
+            - name: MODEL_NAME
+              value: "vidore/colqwen2-v1.0"
+            - name: MODEL_CACHE_DIR
+              value: "/models"
+            # Quantization (memory optimization)
+            - name: USE_QUANTIZATION
+              value: "false"  # Set to "true" for INT8
+            - name: QUANTIZATION_TYPE
+              value: "int8"
+            # Server
+            - name: SERVER_HOST
+              value: "0.0.0.0"
+            - name: SERVER_PORT
+              value: "8001"
+            # Qdrant integration
+            - name: QDRANT_URL
+              value: "http://qdrant.ai-stack.svc.cluster.local:6333"
+            - name: QDRANT_COLLECTION
+              value: "visual_embeddings"
+            # HuggingFace cache
+            - name: HF_HOME
+              value: "/models/huggingface"
+            - name: TRANSFORMERS_CACHE
+              value: "/models/transformers"
+          volumeMounts:
+            - name: models
+              mountPath: /models
+            - name: shm
+              mountPath: /dev/shm
+          resources:
+            requests:
+              memory: "8Gi"
+              cpu: "2"
+              nvidia.com/gpu: "1"
+            limits:
+              memory: "16Gi"
+              cpu: "4"
+              nvidia.com/gpu: "1"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 120  # Model yükleme süresi
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: colqwen2-models
+        # Shared memory for PyTorch
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 2Gi

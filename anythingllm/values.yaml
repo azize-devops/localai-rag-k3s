@@ -1,0 +1,90 @@
+# AnythingLLM Helm Values
+# Helm Chart: https://la-cc.github.io/anything-llm-helm-chart
+# GitHub: https://github.com/Mintplex-Labs/anything-llm
+
+fullnameOverride: "anythingllm"
+replicaCount: 1
+
+image:
+  repository: ghcr.io/mintplex-labs/anything-llm
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Kaynak limitleri
+resources:
+  requests:
+    memory: "1Gi"
+    cpu: "500m"
+  limits:
+    memory: "2Gi"
+    cpu: "1"
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 3001
+
+# Persistence
+persistence:
+  enabled: true
+  storageClass: "longhorn-xfs-strg1"
+  accessMode: ReadWriteOnce
+  size: 10Gi
+  mountPath: /app/server/storage
+  existingClaim: ""  # Force new PVC creation
+
+# Config - AnythingLLM configuration
+config:
+  # Disable telemetry
+  DISABLE_TELEMETRY: "true"
+
+  # Disable authentication (no password required)
+  AUTH_TOKEN: ""
+  PASSWORDLESS_AUTH: "true"
+
+  # LLM Provider - LocalAI (OpenAI compatible)
+  LLM_PROVIDER: "generic-openai"
+  GENERIC_OPEN_AI_BASE_PATH: "http://localai-local-ai.ai-stack.svc.cluster.local:8080/v1"
+  GENERIC_OPEN_AI_MODEL_PREF: "gpt-4"
+  GENERIC_OPEN_AI_MODEL_TOKEN_LIMIT: "2048"
+
+  # Embedding Provider - LocalAI
+  EMBEDDING_ENGINE: "generic-openai"
+  EMBEDDING_BASE_PATH: "http://localai-local-ai.ai-stack.svc.cluster.local:8080/v1"
+  EMBEDDING_MODEL_PREF: "text-embedding-ada-002"
+  EMBEDDING_MODEL_MAX_CHUNK_LENGTH: "512"
+
+  # Vector DB - Qdrant
+  VECTOR_DB: "qdrant"
+  QDRANT_ENDPOINT: "http://qdrant.ai-stack.svc.cluster.local:6333"
+
+  # Storage
+  STORAGE_DIR: "/app/server/storage"
+
+# Secret configuration
+secret:
+  AUTH_TOKEN: ""
+  JWT_SECRET: ""  # Will be auto-generated if empty
+
+# Ingress (disabled - cluster internal access)
+ingress:
+  enabled: false
+  # className: nginx
+  # annotations:
+  #   nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+  # hosts:
+  #   - host: anythingllm.example.com
+  #     paths:
+  #       - path: /
+  #         pathType: Prefix
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Optional components (disabled)
+chromadb:
+  enabled: false
+
+ollama:
+  enabled: false

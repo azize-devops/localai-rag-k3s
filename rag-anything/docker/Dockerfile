@@ -1,0 +1,65 @@
+# RAG-Anything Docker Image
+# Cloned directly from GitHub: https://github.com/HKUDS/RAG-Anything
+# Connects to LocalAI for LLM and Qdrant for vectors
+
+FROM python:3.11-slim
+
+LABEL maintainer="Amazon Arbitrage Project"
+LABEL description="RAG-Anything Multimodal RAG Server"
+
+WORKDIR /app
+
+# System dependencies for MinerU and document processing
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    libmagic1 \
+    poppler-utils \
+    tesseract-ocr \
+    libreoffice \
+    && rm -rf /var/lib/apt/lists/*
+
+# Clone RAG-Anything from GitHub
+RUN git clone https://github.com/HKUDS/RAG-Anything.git /app/raganything
+
+# Install RAG-Anything from source with all features
+WORKDIR /app/raganything
+RUN pip install --no-cache-dir -e '.[all]'
+
+# Install additional dependencies for our API server
+RUN pip install --no-cache-dir \
+    fastapi \
+    uvicorn[standard] \
+    python-multipart \
+    aiofiles \
+    httpx \
+    qdrant-client \
+    openai
+
+# Copy our API server files
+WORKDIR /app
+COPY server.py .
+COPY config.py .
+
+# Create directories
+RUN mkdir -p /data/rag /data/documents /data/cache
+
+# Non-root user
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app /data
+USER appuser
+
+# Environment defaults (override in k8s)
+ENV LOCALAI_URL=http://localai:8080/v1
+ENV QDRANT_URL=http://qdrant:6333
+ENV WORKING_DIR=/data/rag
+ENV LOG_LEVEL=INFO
+
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
