@@ -1,0 +1,19 @@
+# RAG-Anything Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: rag-anything
+  namespace: ai-stack
+  labels:
+    app: rag-anything
+    app.kubernetes.io/name: rag-anything
+    app.kubernetes.io/part-of: ai-stack
+spec:
+  type: ClusterIP
+  selector:
+    app: rag-anything
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      protocol: TCP

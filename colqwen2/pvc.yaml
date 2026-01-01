@@ -1,0 +1,18 @@
+# ColQwen2 PersistentVolumeClaim - Model Cache
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: colqwen2-models
+  namespace: ai-stack
+  labels:
+    app: colqwen2
+    app.kubernetes.io/name: colqwen2
+    app.kubernetes.io/part-of: ai-stack
+    phase: "2"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn-xfs-strg1
+  resources:
+    requests:
+      storage: 20Gi  # Model weights cache

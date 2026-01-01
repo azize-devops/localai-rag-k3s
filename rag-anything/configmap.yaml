@@ -1,0 +1,43 @@
+# RAG-Anything ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rag-anything-config
+  namespace: ai-stack
+  labels:
+    app: rag-anything
+    app.kubernetes.io/name: rag-anything
+    app.kubernetes.io/part-of: ai-stack
+data:
+  # RAG-Anything configuration
+  config.yaml: |
+    working_dir: /data/rag
+
+    # LLM Backend - LocalAI
+    llm:
+      base_url: "http://localai.ai-stack.svc.cluster.local:8080/v1"
+      model: "mistral-7b-instruct"
+      api_key: "sk-localai-dummy-key"
+
+    # Embedding
+    embedding:
+      base_url: "http://localai.ai-stack.svc.cluster.local:8080/v1"
+      model: "text-embedding-ada-002"
+
+    # Vector DB - Qdrant
+    vector_db:
+      type: "qdrant"
+      url: "http://qdrant.ai-stack.svc.cluster.local:6333"
+      collection: "rag_anything"
+
+    # RAG Settings
+    rag:
+      chunk_size: 512
+      chunk_overlap: 50
+      top_k: 5
+      mode: "hybrid"  # naive, local, global, hybrid
+
+    # Server
+    server:
+      host: "0.0.0.0"
+      port: 8000

@@ -1,0 +1,23 @@
+# Kustomization for ColQwen2 (Faz 2)
+# Usage: kubectl apply -k kubernetes/colqwen2/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ai-stack
+
+resources:
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+
+commonLabels:
+  app.kubernetes.io/name: colqwen2
+  app.kubernetes.io/part-of: ai-stack
+  app.kubernetes.io/managed-by: kustomize
+  phase: "2"
+
+# Image customization
+images:
+  - name: colqwen2
+    newName: burhandocker2021/colqwen2
+    newTag: latest

@@ -1,0 +1,20 @@
+# ColQwen2 Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: colqwen2
+  namespace: ai-stack
+  labels:
+    app: colqwen2
+    app.kubernetes.io/name: colqwen2
+    app.kubernetes.io/part-of: ai-stack
+    phase: "2"
+spec:
+  type: ClusterIP
+  selector:
+    app: colqwen2
+  ports:
+    - name: http
+      port: 8001
+      targetPort: 8001
+      protocol: TCP

@@ -1,0 +1,9 @@
+# AI Stack Namespace
+# kubectl apply -f namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-stack
+  labels:
+    app.kubernetes.io/name: ai-stack
+    app.kubernetes.io/part-of: amazon-arbitrage

@@ -1,0 +1,107 @@
+# LocalAI Helm Values
+# Helm Chart: https://artifacthub.io/packages/helm/cowboysysop/local-ai
+# GitHub: https://github.com/mudler/LocalAI
+
+replicaCount: 1
+
+image:
+  registry: docker.io
+  repository: localai/localai
+  tag: latest-aio-gpu-nvidia-cuda-12
+  pullPolicy: IfNotPresent
+
+# Kaynak limitleri
+resources:
+  requests:
+    memory: "4Gi"
+    cpu: "2"
+  limits:
+    memory: "12Gi"
+    cpu: "6"
+    nvidia.com/gpu: "1"
+# NVIDIA runtime
+runtimeClassName: nvidia
+
+# LocalAI Configuration
+config:
+  # Model gallery
+  galleries:
+    - name: model-gallery
+      url: github:go-skynet/model-gallery/index.yaml
+  # Preload models on startup
+  # mistral: LLM (~5.5GB) - CPU ile calisir
+  # all-minilm-l6-v2: Embedding modeli
+  preloadModels:
+    - url: "github:go-skynet/model-gallery/mistral.yaml"
+      name: mistral
+  # - url: "github:go-skynet/model-gallery/bert-embeddings.yaml"
+  #   name: all-minilm-l6-v2
+
+# Extra environment variables
+extraEnvVars:
+  - name: DEBUG
+    value: "false"
+  # Thread count (GPU için düşük tutuldu)
+  - name: THREADS
+    value: "4"
+  # Context size
+  - name: CONTEXT_SIZE
+    value: "2048"
+  # GPU layers - tüm katmanları GPU'ya yükle
+  - name: GPU_LAYERS
+    value: "999" 
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 8080
+
+# Persistence - Model storage
+persistence:
+  enabled: true
+  storageClass: "longhorn-xfs-strg1"
+  accessMode: ReadWriteOnce
+  size: 50Gi
+  mountPath: /models
+
+# Health checks
+# Liveness probe - container canli mi (uzun initialDelay model indirme icin)
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+  initialDelaySeconds: 1800  # 30 dakika bekle (model indirme)
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 5
+
+# Readiness probe - trafik almaya hazir mi
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: 8080
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Node selector (GPU node için)
+nodeSelector:
+  nvidia.com/gpu.present: "true"
+
+tolerations:
+  - key: "nvidia.com/gpu"
+    operator: "Exists"
+    effect: "NoSchedule"
+
+affinity: {}
+
+# Ingress (opsiyonel - cluster içi erişim yeterli)
+ingress:
+  enabled: false
+  # className: nginx
+  # hosts:
+  #   - host: localai.example.com
+  #     paths:
+  #       - path: /
+  #         pathType: Prefix

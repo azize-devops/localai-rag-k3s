@@ -1,0 +1,86 @@
+# Qdrant Helm Values
+# Helm Chart: https://artifacthub.io/packages/helm/qdrant/qdrant
+# GitHub: https://github.com/qdrant/qdrant
+
+replicaCount: 1
+
+image:
+  repository: qdrant/qdrant
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Kaynak limitleri
+resources:
+  requests:
+    memory: "1Gi"
+    cpu: "500m"
+  limits:
+    memory: "4Gi"
+    cpu: "2"
+
+# Service configuration
+service:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 6333
+      targetPort: 6333
+    - name: grpc
+      port: 6334
+      targetPort: 6334
+
+# Persistence
+persistence:
+  enabled: true
+  storageClass: "longhorn-xfs-strg1"
+  accessMode: ReadWriteOnce
+  size: 20Gi
+
+# Qdrant configuration
+config:
+  cluster:
+    enabled: false
+  storage:
+    storage_path: /qdrant/storage
+  service:
+    host: "0.0.0.0"
+    http_port: 6333
+    grpc_port: 6334
+  # Optimized for small-medium workloads
+  optimizers_config:
+    default_segment_number: 2
+    memmap_threshold_kb: 20000
+    indexing_threshold_kb: 20000
+  # HNSW index parameters
+  hnsw_config:
+    m: 16
+    ef_construct: 100
+    full_scan_threshold: 10000
+
+# Health checks
+livenessProbe:
+  httpGet:
+    path: /
+    port: 6333
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: 6333
+  initialDelaySeconds: 10
+  periodSeconds: 5
+
+# API Key (production'da Secret kullan)
+apiKey: ""
+  # secretName: qdrant-api-key
+  # secretKey: api-key
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Ingress (opsiyonel)
+ingress:
+  enabled: false
